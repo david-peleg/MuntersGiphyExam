@@ -1,4 +1,5 @@
 ﻿using MuntersGiphyExam.Services.Interfaces;
+using System.Collections.Concurrent;
 
 namespace MuntersGiphyExam.Services
 {
@@ -6,22 +7,20 @@ namespace MuntersGiphyExam.Services
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
-        private readonly Dictionary<string, string> _cache;
-        private string _cachedTrendingGifs;
+        private readonly ConcurrentDictionary<string, string> _cache;
 
         public GiphyService(string apiKey)
         {
             _apiKey = apiKey;
             _httpClient = new HttpClient();
-            _cache = new Dictionary<string, string>();
-            _cachedTrendingGifs = string.Empty;
+            _cache = new ConcurrentDictionary<string, string>();
         }
 
         public async Task<string> GetTrendingGifs()
         {
-            if (!string.IsNullOrEmpty(_cachedTrendingGifs))
+            if (_cache.ContainsKey("trending"))
             {
-                return _cachedTrendingGifs;
+                return _cache["trending"];
             }
 
             try
@@ -32,7 +31,7 @@ namespace MuntersGiphyExam.Services
                 if (response.IsSuccessStatusCode)
                 {
                     string json = await response.Content.ReadAsStringAsync();
-                    _cachedTrendingGifs = json;
+                    _cache["trending"] = json;
                     return json;
                 }
                 else
